@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+    <div id="app">
+        <form action="" style="width: 300px; height:200px;margin:100px auto; padding: 20px;" enctype="multipart/form-data">
+            <div class="mb-3">
+                <input class="form-control" type="file" id="formFile" :name="file">
+            </div>
+            <div class="mb-3">
+                <button class="btn btn-primary col-md-12" type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+    </script>
+
+    <script>
+        let fileInp = document.querySelector("input[type='file']");
+        let submitButton = document.querySelector("form");
+        let file;
+
+        fileInp.addEventListener("change", (event) => {
+
+            file = fileInp.files[0];
+
+            const fileReader = new FileReader();
+            let slice = file.slice(0, 100000);
+            fileReader.readAsArrayBuffer(slice);
+
+
+            fileReader.onload = event => {
+                let arrayBuffer = fileReader.result;
+                let data = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: arrayBuffer
+                }
+
+                socket.emit("upload", data);
+
+                socket.on("request slice upload", data => {
+                    let place = data.currentSlice * 100000;
+                    let slice = file.slice(place, place + Math.min(100000, file.size - place));
+
+                    fileReader.readAsArrayBuffer(slice);
+                })
+
+                socket.on("upload error", () => alert("error"));
+
+            }
+        })
+
+
+        submitButton.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+
+        })
+    </script>
+</body>
+
+</html>
